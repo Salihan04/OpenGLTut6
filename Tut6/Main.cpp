@@ -14,17 +14,23 @@ using namespace std;
 void renderScene();
 void createCubeVertexBuffer();
 void createCubeColorBuffer();
+void createTriangleVertexBuffer();
+void createTriangleColorBuffer();
 void initialiseGlutCallback();
 GLfloat generateRandNum();
 
 GLuint cubeVertexBuffer;
 GLuint cubeColorBuffer;
+GLuint triangleVertexBuffer;
+GLuint triangleColorBuffer;
 GLuint programId;
 GLuint matrixID;
 glm::mat4 projection;
 glm::mat4 view;
-glm::mat4 model;
-glm::mat4 MVP;
+glm::mat4 cubeModel;
+glm::mat4 triangleModel;
+glm::mat4 cubeMVP;
+glm::mat4 triangleMVP;
 
 int main(int argc, char **argv) {
 	srand(time(0));
@@ -32,7 +38,7 @@ int main(int argc, char **argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(300, 300);
-	glutInitWindowSize(400, 300);
+	glutInitWindowSize(500, 300);
 	glutCreateWindow("Tutorial 05 - Adding Transformation to Triangle");
 
 	initialiseGlutCallback();
@@ -62,15 +68,27 @@ int main(int argc, char **argv) {
 		glm::vec3(0, 1, 0)  //head is up (set to 0,-1,0 to look upside-down)
 		);
 
-	//model matrix : an identity matrix (model will be at the origin)
-	model = glm::mat4(1.0f);
+	//model matrix for cube : an identity matrix (model will be at the origin)
+	cubeModel = glm::mat4(1.0f);
+	//translate the cubeModel 5 units to the right along x-axis
+	cubeModel = glm::translate(cubeModel, glm::vec3(-5, 0, 0));
+
+	//model matrix for triangle : an identity matrix (model will be at the origin)
+	triangleModel = glm::mat4(1.0f);
+	//translate the triangleModel 1 units to the left along x-axis
+	triangleModel = glm::translate(triangleModel, glm::vec3(1, 0, 0));
+	//rotate 30 degrees in counter-clockwise direction about y-axis
+	//rotation in clockwise direction will require negative angles
+	triangleModel = glm::rotate(triangleModel, 30.0f, glm::vec3(0, 1, 0));
+	
 
 	//our ModelViewProjection : multiplication of our 3 matrices
 	//remember, matrix multiplication is the other way around
-	MVP = projection * view * model;
+	cubeMVP = projection * view * cubeModel;
+	triangleMVP = projection * view * triangleModel;
 
-	//blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
+	//black background
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	//enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -79,6 +97,8 @@ int main(int argc, char **argv) {
 
 	createCubeVertexBuffer();
 	createCubeColorBuffer();
+	createTriangleVertexBuffer();
+	createTriangleColorBuffer();
 
 	glutMainLoop();
 
@@ -86,15 +106,14 @@ int main(int argc, char **argv) {
 }
 
 void renderScene() {
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//use the shader
 	glUseProgram(programId);
 
 	// Send our transformation to the currently bound shader, 
-	// in the "MVP" uniform
-	glUniformMatrix4fv(matrixID, 1, GL_FALSE, &MVP[0][0]);
+	// in the "cubeMVP" uniform
+	glUniformMatrix4fv(matrixID, 1, GL_FALSE, &cubeMVP[0][0]);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVertexBuffer);
@@ -104,8 +123,23 @@ void renderScene() {
 	glBindBuffer(GL_ARRAY_BUFFER, cubeColorBuffer);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-	//draw triangle
+	//draw cube
 	glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
+
+	// Send our transformation to the currently bound shader, 
+	// in the "triangleMVP" uniform
+	glUniformMatrix4fv(matrixID, 1, GL_FALSE, &triangleMVP[0][0]);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, triangleVertexBuffer);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, triangleColorBuffer);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+	//draw triangle
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -169,12 +203,38 @@ void createCubeColorBuffer() {
 
 	int j = 3;
 	while (j < 12 * 3 * 4) {
-		colors[j] = 1.0f;
+		colors[j] = 1.0f;		//set alpha value to 1.0f
 		j += 4;
 	}
 
 	glGenBuffers(1, &cubeColorBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeColorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+}
+
+void createTriangleVertexBuffer() {
+	//set vertices for triangle
+	GLfloat vertices[] = {
+		-1.0f, -1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f
+	};
+
+	glGenBuffers(1, &triangleVertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, triangleVertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+}
+
+void createTriangleColorBuffer() {
+	//set color vertices for triangle
+	GLfloat colors[] = {
+		1.0f, 0.0f, 0.0f, 1.0f,
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f
+	};
+
+	glGenBuffers(1, &triangleColorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, triangleColorBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
 }
 
@@ -184,5 +244,6 @@ void initialiseGlutCallback() {
 }
 
 GLfloat generateRandNum() {
+	//generate random float number from 0.0 to 1.0 inclusive
 	return ((GLfloat)rand()) / RAND_MAX;
 }
