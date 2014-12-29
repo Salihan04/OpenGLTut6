@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(300, 300);
 	glutInitWindowSize(500, 300);
-	glutCreateWindow("Tutorial 05 - Adding Transformation to Triangle");
+	glutCreateWindow("Tutorial 06 - Creating a Coloured Cube");
 
 	initialiseGlutCallback();
 
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 	//get a handle for our "MVP" uniform
 	matrixID = glGetUniformLocation(programId, "MVP");
 
-	//projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	//projection matrix : 45Â° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
 	//or, for an ortho camera :
 	/*projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 100.0f); // In world coordinates*/
